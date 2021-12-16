@@ -14,7 +14,7 @@ DEFINE_uint32(shardIndex, 0, "Index of the shard this replica is replicating");
 DEFINE_uint64(numKeys, 1000000, "Number of keys in the store");
 DEFINE_uint32(numShards, 1, "Number of shards");
 DEFINE_uint32(numServerThreads, 1, "Number of server replica threads");
-DEFINE_string(logPath, "/mnt/log", "Path to the log files");
+DEFINE_string(logsDir, "/mnt/log", "Path to the log files");
 DEFINE_uint32(numClientThreads, 1, "Number of client threads");
 DEFINE_uint32(numClientFibers, 1, "Number of fibers per client thread");
 DEFINE_uint64(secondsFromEpoch, 0, "Synchronization point (start clock) for all clients");

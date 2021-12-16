@@ -173,6 +173,7 @@ def run_benchmark(bench_dir, clients, servers, parameters):
                 "--keysFile", parameters.keys_file,
                 "--numKeys", str(parameters.num_keys),
                 "--backingStoreDir", os.path.join(parameters.suite_directory, 'backend_store'),
+                "--logsDir", str(parameters.logs_directory),
                 "--numShards", "1",
                 "--duration", str(parameters.benchmark_duration_seconds),
                 "--warmup", str(parameters.benchmark_warmup_seconds),
@@ -184,6 +185,7 @@ def run_benchmark(bench_dir, clients, servers, parameters):
                 "--numClientFibers", str(parameters.num_fibers_per_client_thread),
                 "--clientIP", str(client.hostname),
                 "--physPort", str(clients[client]['phys_port'])
+
             ]
 
             # As with the servers, we record the stdout and stderr of the

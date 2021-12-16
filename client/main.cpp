@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <vector>
 
 
 #include "betree.hpp"
@@ -228,7 +229,8 @@ int test(betree<FKey, std::string> &b,
 void benchmark_upserts(betree<FKey, std::string> &b,
 		       uint64_t nops,
 		       uint64_t number_of_distinct_keys,
-		       uint64_t random_seed)
+		       uint64_t random_seed,
+		       FILE* fp)
 {
   uint64_t overall_timer = 0;
   for (uint64_t j = 0; j < 100; j++) {
@@ -239,18 +241,18 @@ void benchmark_upserts(betree<FKey, std::string> &b,
       b.update(FKey(std::to_string(t)), std::to_string(t) + ":");
     }
     timer_stop(timer);
-    printf("%ld %ld %ld\n", j, nops/100, timer);
+    fprintf(fp, "%ld %ld %ld\n", j, nops/100, timer);
     overall_timer += timer;
   }
-  printf("# overall: %ld %ld\n", 100*(nops/100), overall_timer);
+  fprintf(fp, "# overall: %ld %ld\n", 100*(nops/100), overall_timer);
 }
 
 void benchmark_queries(betree<FKey, std::string> &b,
 		       uint64_t nops,
 		       uint64_t number_of_distinct_keys,
-		       uint64_t random_seed)
+		       uint64_t random_seed,
+		       FILE* fp)
 {
-  
   // Pre-load the tree with data
   srand(random_seed);
   for (uint64_t i = 0; i < nops; i++) {
@@ -267,7 +269,7 @@ void benchmark_queries(betree<FKey, std::string> &b,
     b.query(std::to_string(t));
   }
 	timer_stop(overall_timer);
-  printf("# overall: %ld %ld\n", nops, overall_timer);
+  fprintf(fp, "# overall: %ld %ld\n", nops, overall_timer);
 
 }
 
@@ -284,6 +286,9 @@ void client_fiber_func(int fiber_id,
     unsigned int random_seed = time(NULL) * getpid();
     srand(random_seed);
 
+    // File to push results to
+    FILE* fp = fopen((FLAGS_logsDir + "/client." + FLAGS_clientIP + "_" + std::to_string(fiber_id) + ".log").c_str(), "w");
+
     StorageClient client(config, transport);
 
     one_file_per_object_backing_store ofpobs(FLAGS_backingStoreDir);
@@ -291,9 +296,11 @@ void client_fiber_func(int fiber_id,
     betree<FKey, std::string> b(&sspace, max_node_size, min_flush_size);
 
     if (FLAGS_benchmark == "benchmark-upserts")
-        benchmark_upserts(b, nops, number_of_distinct_keys, random_seed);
+        benchmark_upserts(b, nops, number_of_distinct_keys, random_seed, fp);
     else if (FLAGS_benchmark ==  "benchmark-queries")
-        benchmark_queries(b, nops, number_of_distinct_keys, random_seed);
+        benchmark_queries(b, nops, number_of_distinct_keys, random_seed, fp);
+
+    fclose(fp);
     b.evict_all();
 }
 
