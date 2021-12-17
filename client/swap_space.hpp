@@ -79,7 +79,7 @@
 #include <cassert>
 #include "backing_store.hpp"
 #include "storage_client.hpp"
-#include "debug.hpp"
+#include "debug/message.hpp"
 
 class swap_space;
 
@@ -188,16 +188,14 @@ public:
   public:
     const Referent * operator->(void) const {
       assert(ss->objects.count(target) > 0);
-      debug(std::cout << "Accessing (constly) " << target
-	    << " (" << ss->objects[target]->target << ")" << std::endl);
+      Debug("Accessing (constly) %lu (%p)", target, ss->objects[target]->target);
       access(target, false);
       return (const Referent *)ss->objects[target]->target;
     }
 
     Referent * operator->(void) {
       assert(ss->objects.count(target) > 0);
-      debug(std::cout << "Accessing " << target
-	    << " (" << ss->objects[target]->target << ")" << std::endl);
+      Debug("Accessing %lu (%p)", target, ss->objects[target]->target);
       access(target, true);
       return (Referent *)ss->objects[target]->target;
     }
@@ -227,8 +225,7 @@ public:
     
   private:
     void unpin(void) {
-      debug(std::cout << "Unpinning " << target
-	    << " (" << ss->objects[target]->target << ")" << std::endl);
+      Debug("Unpinning %lu (%p)", target, ss->objects[target]->target);
       if (target > 0) {
 	assert(ss->objects.count(target) > 0);
 	ss->objects[target]->pincount--;
@@ -244,8 +241,7 @@ public:
       target = newtarget;
       if (target > 0) {
 	assert(ss->objects.count(target) > 0);
-	debug(std::cout << "Pinning " << target
-	      << " (" << ss->objects[target]->target << ")" << std::endl);
+        Debug("Pinning %lu (%p)", target, ss->objects[target]->target);
 	ss->objects[target]->pincount++;
       }
     }
@@ -297,14 +293,14 @@ public:
       object *obj = ss->objects[target];
       assert(obj->refcount > 0);
       if ((--obj->refcount) == 0) {
-	debug(std::cout << "Erasing " << target << std::endl);
+	Debug("Erasing %lu", target);
 	// Load it into memory so we can recursively free stuff
 	if (obj->target == NULL) {
 	  assert(obj->bsid > 0);
 	  if (!obj->is_leaf) {
 	    ss->load<Referent>(target);
 	  } else {
-	    debug(std::cout << "Skipping load of leaf " << target << std::endl);
+	    Debug("Skipping load of leaf %lu", target);
 	  }
 	}
 	ss->objects.erase(target);
@@ -443,7 +439,7 @@ private:
     assert(objects.count(tgt) > 0);
     if (objects[tgt]->target == NULL) {
       object *obj = objects[tgt];
-      debug(std::cout << "Loading " << obj->id << std::endl);
+      Debug("Loading %lu", obj->id);
       std::iostream *in = backstore->get(obj->bsid);
       Referent *r = new Referent();
       serialization_context ctxt(*this);

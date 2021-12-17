@@ -90,7 +90,7 @@ void do_scan(typename betree<Key, Value>::iterator &betit,
     assert(betit.second == refit->second);
     ++refit;
     if (refit == reference.end()) {
-      debug(std::cout << "Almost done" << std::endl);
+      Debug("Almost done");
     }
     ++betit;
   }
@@ -255,9 +255,10 @@ void benchmark_queries(betree<FKey, std::string> &b,
 {
   // Pre-load the tree with data
   srand(random_seed);
-  for (uint64_t i = 0; i < nops; i++) {
-    uint64_t t = rand() % number_of_distinct_keys;
-    b.update(std::to_string(t), std::to_string(t) + ":");
+  for (uint64_t i = 0; i < number_of_distinct_keys; i++) {
+    //uint64_t t = rand() % number_of_distinct_keys;
+    //b.update(std::to_string(t), std::to_string(t) + ":");
+    b.update(std::to_string(i), std::to_string(i) + ":");
   }
 
 	// Now go back and query it

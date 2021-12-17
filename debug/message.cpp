@@ -57,7 +57,10 @@ Message_VA(enum Message_Type type,
            const char *fname, int line, const char *func,
            const char *fmt, va_list args)
 {
-    _Message_VA(type, stderr, fname, line, func, fmt, args);
+    if (type == MSG_DEBUG || type == MSG_NOTICE)
+      _Message_VA(type, stdout, fname, line, func, fmt, args);
+    else
+      _Message_VA(type, stderr, fname, line, func, fmt, args);
 }
 
 void

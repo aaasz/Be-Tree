@@ -425,11 +425,11 @@ private:
     // Otherwise return an empty map.
     pivot_map flush(betree &bet, message_map &elts)
     {
-      debug(std::cout << "Flushing " << this << std::endl);
+      Debug("Flushing %p", this);
       pivot_map result;
 
       if (elts.size() == 0) {
-	debug(std::cout << "Done (empty input)" << std::endl);
+	Debug("Done (empty input)");
 	return result;
       }
 
@@ -524,13 +524,13 @@ private:
 
       //merge_small_children(bet);
       
-      debug(std::cout << "Done flushing " << this << std::endl);
+      Debug("Done flushing %p", this);
       return result;
     }
 
     Value query(const betree & bet, const Key k) const
     {
-      debug(std::cout << "Querying " << this << std::endl);
+      Debug("Querying %p", this);
       if (is_leaf()) {
 	auto it = elements.lower_bound(MessageKey<Key>::range_start(k));
 	if (it != elements.end() && it->first.key == k) {
