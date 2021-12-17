@@ -65,7 +65,7 @@ void StorageServer::HandleEvictNode(char *reqBuf, char *respBuf, size_t &respLen
     auto *req = reinterpret_cast<evictnode_request_t *>(reqBuf);
     auto *resp = reinterpret_cast<evictnode_response_t *>(respBuf);
     std::string buffer = string(req->buffer, 4096);
-    std::cout << "Buffer for " << req->node_id << "is: " << buffer << "\n";
+    Debug("Buffer for %lu is: %s", req->node_id, buffer.c_str());
     resp->req_nr = req->req_nr;
     resp->success = true;
     respLen = sizeof(evictnode_response_t);
