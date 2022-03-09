@@ -97,7 +97,9 @@ void do_scan(typename betree<Key, Value>::iterator &betit,
   assert(betit == b.end());
 }
 
-#define DEFAULT_TEST_MAX_NODE_SIZE (1ULL<<6)
+//#define DEFAULT_TEST_MAX_NODE_SIZE (1ULL<<6)
+//#define DEFAULT_TEST_MIN_FLUSH_SIZE (DEFAULT_TEST_MAX_NODE_SIZE / 4)
+#define DEFAULT_TEST_MAX_NODE_SIZE (1ULL<<2)
 #define DEFAULT_TEST_MIN_FLUSH_SIZE (DEFAULT_TEST_MAX_NODE_SIZE / 4)
 #define DEFAULT_TEST_CACHE_SIZE (4)
 #define DEFAULT_TEST_NDISTINCT_KEYS (1ULL << 10)
@@ -274,6 +276,32 @@ void benchmark_queries(betree<FKey, std::string> &b,
 
 }
 
+void benchmark_test(betree<FKey, std::string> &b,
+		       uint64_t nops,
+		       uint64_t number_of_distinct_keys,
+		       uint64_t random_seed,
+		       FILE* fp)
+{
+  uint64_t overall_timer = 0;
+  timer_start(overall_timer);
+  Debug("*** Do update 0");
+  b.update(std::to_string(0), std::to_string(0) + ":");
+  Debug("*** Done update 0");
+  Debug("*** Do update 1");
+  b.update(std::to_string(1), std::to_string(1) + ":");
+  Debug("*** Done update 1");
+  Debug("*** Do update 2");
+  b.update(std::to_string(2), std::to_string(2) + ":");
+  Debug("*** Done update 2");
+  Debug("*** Do update 3");
+  b.update(std::to_string(3), std::to_string(3) + ":");
+  Debug("*** Done update 3");
+  Debug("Do query 3");
+  b.query(std::to_string(3));
+  Debug("Query done 3");
+  timer_stop(overall_timer);
+  fprintf(fp, "# overall: %ld %ld\n", nops, overall_timer);
+}
 
 void client_fiber_func(int fiber_id,
                        network::Configuration config,
@@ -300,6 +328,8 @@ void client_fiber_func(int fiber_id,
         benchmark_upserts(b, nops, number_of_distinct_keys, random_seed, fp);
     else if (FLAGS_benchmark ==  "benchmark-queries")
         benchmark_queries(b, nops, number_of_distinct_keys, random_seed, fp);
+    else if (FLAGS_benchmark ==  "benchmark-test")
+        benchmark_test(b, nops, number_of_distinct_keys, random_seed, fp);
 
     fclose(fp);
     b.evict_all();

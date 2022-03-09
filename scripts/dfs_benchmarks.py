@@ -33,6 +33,8 @@ Parameters = namedtuple('Parameters', [
     'benchmark_duration_seconds',
     # The number of seconds that the clients warmup.
     'benchmark_warmup_seconds',
+    # The type of benchamrk to run.
+    'benchmark',
     # The percentage of operations in a transaction that are writes.
     'write_percentage',
     # The zipfian coefficient used to select keys.
@@ -75,12 +77,12 @@ def boxed(s):
 # to send dataplane traffic.
 def haas_clients():
     return {
-        RemoteHost('10.172.209.107') : {'phys_port'  : 0}, # sc2-hs2-b1637
+        RemoteHost('10.172.209.99') : {'phys_port'  : 0}, # sc2-hs2-b1629 
     }
 
 def haas_servers():
     return {
-        RemoteHost('10.172.209.99') : {'phys_port'  : 0}, # sc2-hs2-b1629 
+        RemoteHost('10.172.209.107') : {'phys_port'  : 0}, # sc2-hs2-b1637
     }
 
 def run_benchmark(bench_dir, clients, servers, parameters):
@@ -123,6 +125,7 @@ def run_benchmark(bench_dir, clients, servers, parameters):
     for (server_index, server) in enumerate(sorted(list(servers.keys()), key=lambda h: h.hostname)):
         cmd = [
             "sudo",
+            "DEBUG=all",
             parameters.server_binary,
             "--configFile", os.path.join(parameters.config_file_directory, 'config.txt'),
             "--serverIndex", str(server_index),
@@ -168,6 +171,7 @@ def run_benchmark(bench_dir, clients, servers, parameters):
             cmd = [
                 "ulimit -n 8192;" , # increase how many fds we can open
                 "sudo",
+                "DEBUG=all",
                 parameters.client_binary,
                 "--configFile", os.path.join(parameters.config_file_directory, 'config.txt'),
                 "--keysFile", parameters.keys_file,
@@ -178,7 +182,7 @@ def run_benchmark(bench_dir, clients, servers, parameters):
                 "--duration", str(parameters.benchmark_duration_seconds),
                 "--warmup", str(parameters.benchmark_warmup_seconds),
                 "--wPer", str(parameters.write_percentage),
-                "--benchmark", "benchmark-upserts",
+                "--benchmark", str(parameters.benchmark),
                 #"--replScheme", str(parameters.repl_scheme),
                 "--numServerThreads", str(parameters.num_server_threads),
                 "--numClientThreads", str(parameters.num_threads_per_client),

@@ -10,6 +10,9 @@
 
 #include "network/configuration.hpp"
 #include "network/transport.hpp"
+#include "common/node_id.hpp"
+
+#include <unordered_map>
 
 class StorageServerApp
 {
@@ -21,6 +24,19 @@ class StorageServerApp
 
   private:
     uint32_t current_id;
+
+    class object {
+      public:
+        object(uint16_t size, char* data) {
+          this->size = size;
+          this->data = data;
+        }
+
+        uint16_t size;
+        char* data;
+    };
+
+    std::unordered_map<NodeID, object*, node_id_hash_fn> objects;
 };
 
 class StorageServer : network::TransportReceiver

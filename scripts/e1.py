@@ -29,7 +29,8 @@ def main(args):
         num_fibers_per_client_thread=None,
         suite_directory=args.suite_directory,
         logs_directory=args.logs_directory,
-    )
+        benchmark="benchmark-test",
+   )
 
     parameters_list = [
       base_parameters._replace(
