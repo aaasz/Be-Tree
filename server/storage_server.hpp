@@ -21,6 +21,7 @@ class StorageServerApp
     virtual ~StorageServerApp() { };
 
     uint32_t GetNodeId();
+    void UpsertNode(NodeID id, uint16_t size, char* buff);
 
   private:
     uint32_t current_id;
@@ -30,6 +31,10 @@ class StorageServerApp
         object(uint16_t size, char* data) {
           this->size = size;
           this->data = data;
+        }
+
+        ~object() {
+          free(data);
         }
 
         uint16_t size;
@@ -55,6 +60,7 @@ class StorageServer : network::TransportReceiver
     bool Blocked() override { return false; };
     // new handlers
     void HandleGetNodeId(char *reqBuf, char *respBuf, size_t &respLen);
+    void HandleUpsertNode(char *reqBuf, char *respBuf, size_t &respLen);
     void HandleEvictNode(char *reqBuf, char *respBuf, size_t &respLen);
 
   private:

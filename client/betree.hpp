@@ -636,8 +636,6 @@ private:
       fs >> dummy;
       deserialize(fs, context, elements);
     }
-
-    
   };
 
   swap_space *ss;

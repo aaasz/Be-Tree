@@ -6,6 +6,11 @@ struct NodeID {
     uint16_t client_id;
     uint64_t seq_nr;
 
+    NodeID()
+    {
+        NodeID(0, 0, 0);
+    }
+
     NodeID(uint8_t server_id, uint16_t client_id, uint64_t seq_nr)
     {
         this->server_id = server_id;

@@ -7,6 +7,8 @@
 #include "storage_server.hpp"
 #include "common/messages.hpp"
 #include <iostream>
+#include <string.h>
+
 using namespace std;
 
 StorageServerApp::StorageServerApp() : current_id(0) {
@@ -14,8 +16,16 @@ StorageServerApp::StorageServerApp() : current_id(0) {
 }
 
 uint32_t StorageServerApp::GetNodeId() {
-   return current_id++;
+    return current_id++;
 }
+
+void StorageServerApp::UpsertNode(NodeID id, uint16_t size, char* buff) {
+    char* data = (char*)malloc(size*sizeof(char));
+    strncpy(data, buff, size);
+    object *o = new object(size, data);
+    objects[id] = o;
+}
+
 
 StorageServer::StorageServer(network::Configuration config, int myIdx,
                      network::Transport *transport,
@@ -42,6 +52,9 @@ void StorageServer::ReceiveRequest(uint8_t reqType, char *reqBuf, char *respBuf)
         case evictNodeReqType:
             HandleEvictNode(reqBuf, respBuf, respLen);
             break;
+        case upsertNodeReqType:
+            HandleUpsertNode(reqBuf, respBuf, respLen);
+            break;
         default:
             Warning("Unrecognized rquest type: %d", reqType);
     }
@@ -58,6 +71,18 @@ void StorageServer::HandleGetNodeId(char *reqBuf, char *respBuf, size_t &respLen
     resp->req_nr = req->req_nr;
     resp->id = storageApp->GetNodeId();
     respLen = sizeof(nodeid_response_t);
+}
+
+void StorageServer::HandleUpsertNode(char *reqBuf, char *respBuf, size_t &respLen) {
+    Debug("Received HandleUpsertNode");
+    auto *req = reinterpret_cast<upsertnode_request_t *>(reqBuf);
+    auto *resp = reinterpret_cast<upsertnode_response_t *>(respBuf);
+    NodeID nid = req->node_id;
+    Debug("NodeId = <%d, %d, %ld>", nid.server_id, nid.client_id, nid.seq_nr);
+    storageApp->UpsertNode(req->node_id, req->size, req->buffer);
+    resp->req_nr = req->req_nr;
+    resp->success = true;
+    respLen = sizeof(upsertnode_response_t);
 }
 
 void StorageServer::HandleEvictNode(char *reqBuf, char *respBuf, size_t &respLen) {

@@ -80,6 +80,7 @@
 #include "backing_store.hpp"
 #include "storage_client.hpp"
 #include "debug/message.hpp"
+#include "common/node_id.hpp"
 
 class swap_space;
 
@@ -390,14 +391,17 @@ public:
   private:
     swap_space *ss;
     uint64_t target;
+    NodeID node_id;
 
     // Only callable through swap_space::allocate(...)
     pointer(swap_space *sspace, Referent *tgt)
     {
       ss = sspace;
       target = sspace->next_id++;
-      nodeid_t node_id = ss->sc->GetNodeId(0, 0, "" );
-      Debug("Received node id: %d", node_id.nodeIdx);
+      // TODO: pick server
+      // TODO: get unique client id
+      node_id = NodeID(0, 0, target);
+      Debug("Creating node with node id: %ld", node_id.seq_nr);
       object *o = new object(sspace, tgt);
       assert(o != NULL);
       target = o->id;
@@ -424,6 +428,7 @@ private:
     
     serializable * target;
     uint64_t id;
+    NodeID node_id;
     uint64_t bsid;
     bool is_leaf;
     uint64_t refcount;

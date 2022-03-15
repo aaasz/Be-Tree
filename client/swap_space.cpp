@@ -93,16 +93,14 @@ void swap_space::write_back(swap_space::object *obj)
   std::stringstream sstream;
   serialize(sstream, ctxt, *obj->target);
   obj->is_leaf = ctxt.is_leaf;
-  std::cout << "In evict\n";
   if (obj->target_is_dirty) {
     std::string buffer = sstream.str();
-    std::cout << "Buffer len for " <<obj->id << "is:" << buffer.length() << "\n";
     uint64_t bsid = backstore->allocate(buffer.length());
     std::iostream *out = backstore->get(bsid);
     out->write(buffer.data(), buffer.length());
     backstore->put(out);
 
-    sc->EvictNode(0,0,obj->id,buffer);
+    sc->UpsertNode(0, obj->node_id, buffer);
     if (obj->bsid > 0)
       backstore->deallocate(obj->bsid);
     obj->bsid = bsid;
