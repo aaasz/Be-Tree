@@ -15,8 +15,8 @@ class StorageClient : public network::TransportReceiver
     virtual ~StorageClient();
 
     // All RPCs this client can invoke
-    virtual bool EvictNode(uint8_t coreIdx, uint32_t serverIdx, uint64_t node_id, const string &request);
     virtual bool UpsertNode(uint8_t coreIdx, NodeID node_id, const string &serialized_node_buffer);
+    virtual std::string GetNode(uint8_t coreIdx, NodeID node_id);
 
     // Inherited from TransportReceiver
     void ReceiveRequest(uint8_t reqType, char *reqBuf, char *respBuf) override { PPanic("Not implemented."); };
@@ -35,10 +35,10 @@ protected:
     bool blocked;
 
     // Handlers for replies to the RPC calls
+    void HandleGetNodeReply(char *respBuf);
     void HandleUpsertNodeReply(char *respBuf);
-    void HandleEvictNodeReply(char *respBuf);
-    bool evictNodeReply;
     bool upsertNodeReply;
+    std::string getNodeReply;
 };
 
 #endif  /* _STORAGE_CLIENT_H_ */

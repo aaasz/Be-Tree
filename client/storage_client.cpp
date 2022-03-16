@@ -34,53 +34,28 @@ StorageClient::StorageClient(const network::Configuration &config,
 
 StorageClient::~StorageClient() { }
 
-//nodeid_t StorageClient::GetNodeId(uint8_t coreIdx,
-//                       uint32_t serverIdx,
-//                       const string &request) {
-//    uint64_t reqId = ++lastReqId;
-//
-//    // TODO: find a way to get sending errors (the eRPC's enqueue_request
-//    // function does not return errors)
-//    // TODO: deal with timeouts?
-//    auto *reqBuf = reinterpret_cast<nodeid_request_t *>(
-//      transport->GetRequestBuf(
-//        sizeof(nodeid_request_t),
-//        sizeof(nodeid_response_t)
-//      )
-//    );
-//
-//    reqBuf->req_nr = reqId;
-//    blocked = true;
-//    transport->SendRequestToServer(this,
-//                                    getNodeIdReqType,
-//                                    serverIdx, coreIdx,
-//                                    sizeof(nodeid_request_t));
-//    this->nodeIdReply.serverIdx = serverIdx;
-//    this->nodeIdReply.coreIdx = coreIdx;
-//    return this->nodeIdReply;
-//}
-
-bool StorageClient::EvictNode(uint8_t coreIdx, 
-                                    uint32_t serverIdx,
-                                    uint64_t node_id,
-                                    const string &request) {
-    
+std::string StorageClient::GetNode(uint8_t coreIdx,
+                       NodeID node_id) {
     uint64_t reqId = ++lastReqId;
-    auto *reqBuf = reinterpret_cast<evictnode_request_t *>(
+
+    // TODO: find a way to get sending errors (the eRPC's enqueue_request
+    // function does not return errors)
+    // TODO: deal with timeouts?
+    auto *reqBuf = reinterpret_cast<getnode_request_t *>(
       transport->GetRequestBuf(
-        sizeof(evictnode_request_t),
-        sizeof(evictnode_response_t)
+        sizeof(getnode_request_t),
+        0 // TODO: compute max size of node
       )
     );
+
     reqBuf->req_nr = reqId;
     reqBuf->node_id = node_id;
-    memcpy(reqBuf->buffer, request.c_str(), request.size());
     blocked = true;
     transport->SendRequestToServer(this,
-                                    evictNodeReqType,
-                                    serverIdx, coreIdx,
-                                    sizeof(evictnode_request_t));
-    return this->evictNodeReply;
+                                    getNodeReqType,
+                                    node_id.server_id, coreIdx,
+                                    sizeof(getnode_request_t));
+    return this->getNodeReply;
 }
 
 bool StorageClient::UpsertNode(uint8_t coreIdx,
@@ -109,37 +84,35 @@ bool StorageClient::UpsertNode(uint8_t coreIdx,
 void StorageClient::ReceiveResponse(uint8_t reqType, char *respBuf) {
     Debug("[%lu] received response", clientid);
     switch(reqType){
-//        case getNodeIdReqType:
-//            HandleGetNodeIdReply(respBuf);
-//            break;
+        case getNodeReqType:
+            HandleGetNodeReply(respBuf);
+            break;
         case upsertNodeReqType:
             HandleUpsertNodeReply(respBuf);
-            break;
-        case evictNodeReqType:
-            HandleEvictNodeReply(respBuf);
             break;
         default:
             Warning("Unrecognized request type: %d\n", reqType);
     }
 }
 
-//void StorageClient::HandleGetNodeIdReply(char *respBuf) {
-//    auto *resp = reinterpret_cast<nodeid_response_t *>(respBuf);
-//
-//    Debug(
-//        "Client received NodeIdReplyMessage for "
-//        "request %lu.", resp->req_nr);
-//
-//    if (resp->req_nr != lastReqId) {
-//        Warning(
-//            "Client was not expecting a NodeIdReplyMessage for request %lu, "
-//            "so it is ignoring the request.",
-//            resp->req_nr);
-//        return;
-//    }
-//    this->nodeIdReply.nodeIdx = resp->id;
-//    blocked = false;
-//}
+void StorageClient::HandleGetNodeReply(char *respBuf) {
+    auto *resp = reinterpret_cast<getnode_response_t *>(respBuf);
+
+    Debug(
+        "Client received NodeGetNodeReplyMessage for "
+        "request %lu.", resp->req_nr);
+
+    if (resp->req_nr != lastReqId) {
+        Warning(
+            "Client was not expecting a GetNodeReplyMessage for request %lu, "
+            "so it is ignoring the request.",
+            resp->req_nr);
+        return;
+    }
+
+    this->getNodeReply = std::string(resp->buffer, resp->size);
+    blocked = false;
+}
 
 void StorageClient::HandleUpsertNodeReply(char *respBuf) {
     auto *resp = reinterpret_cast<evictnode_response_t *>(respBuf);
@@ -156,24 +129,5 @@ void StorageClient::HandleUpsertNodeReply(char *respBuf) {
         return;
     }
     this->upsertNodeReply = resp->success;
-    blocked = false;
-}
-
-
-void StorageClient::HandleEvictNodeReply(char *respBuf) {
-    auto *resp = reinterpret_cast<evictnode_response_t *>(respBuf);
-
-    Debug(
-        "Client received EvictNodeReplyMessage for "
-        "request %lu.", resp->req_nr);
-
-    if (resp->req_nr != lastReqId) {
-        Warning(
-            "Client was not expecting a EvictNodeReplyMessage for request %lu, "
-            "so it is ignoring the request.",
-            resp->req_nr);
-        return;
-    }
-    this->evictNodeReply = resp->success;
     blocked = false;
 }

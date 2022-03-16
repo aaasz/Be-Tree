@@ -445,6 +445,8 @@ private:
     if (objects[tgt]->target == NULL) {
       object *obj = objects[tgt];
       Debug("Loading %lu", obj->id);
+      // TODO: verify we get the correct object and put this in referant
+      std::stringstream ss(sc->GetNode(0, obj->node_id));
       std::iostream *in = backstore->get(obj->bsid);
       Referent *r = new Referent();
       serialization_context ctxt(*this);

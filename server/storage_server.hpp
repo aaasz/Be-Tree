@@ -20,28 +20,12 @@ class StorageServerApp
     StorageServerApp();
     virtual ~StorageServerApp() { };
 
-    uint32_t GetNodeId();
+    std::string GetNode(NodeID id);
     void UpsertNode(NodeID id, uint16_t size, char* buff);
 
   private:
     uint32_t current_id;
-
-    class object {
-      public:
-        object(uint16_t size, char* data) {
-          this->size = size;
-          this->data = data;
-        }
-
-        ~object() {
-          free(data);
-        }
-
-        uint16_t size;
-        char* data;
-    };
-
-    std::unordered_map<NodeID, object*, node_id_hash_fn> objects;
+    std::unordered_map<NodeID, std::string, node_id_hash_fn> objects;
 };
 
 class StorageServer : network::TransportReceiver
@@ -59,15 +43,13 @@ class StorageServer : network::TransportReceiver
                                                                       // with eachother
     bool Blocked() override { return false; };
     // new handlers
-    void HandleGetNodeId(char *reqBuf, char *respBuf, size_t &respLen);
+    void HandleGetNode(char *reqBuf, char *respBuf, size_t &respLen);
     void HandleUpsertNode(char *reqBuf, char *respBuf, size_t &respLen);
-    void HandleEvictNode(char *reqBuf, char *respBuf, size_t &respLen);
 
   private:
     network::Configuration config;
     int myIdx; // Server index into config.
     network::Transport *transport;
-
     StorageServerApp * storageApp;
 };
 

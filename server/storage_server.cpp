@@ -15,17 +15,13 @@ StorageServerApp::StorageServerApp() : current_id(0) {
 
 }
 
-uint32_t StorageServerApp::GetNodeId() {
-    return current_id++;
+std::string StorageServerApp::GetNode(NodeID node_id) {
+    return objects[node_id];
 }
 
-void StorageServerApp::UpsertNode(NodeID id, uint16_t size, char* buff) {
-    char* data = (char*)malloc(size*sizeof(char));
-    strncpy(data, buff, size);
-    object *o = new object(size, data);
-    objects[id] = o;
+void StorageServerApp::UpsertNode(NodeID node_id, uint16_t size, char* buff) {
+    objects[node_id] = std::string(buff, size);
 }
-
 
 StorageServer::StorageServer(network::Configuration config, int myIdx,
                      network::Transport *transport,
@@ -46,11 +42,8 @@ StorageServer::~StorageServer() { }
 void StorageServer::ReceiveRequest(uint8_t reqType, char *reqBuf, char *respBuf) {
     size_t respLen;
     switch(reqType) {
-        case getNodeIdReqType:
-            HandleGetNodeId(reqBuf, respBuf, respLen);
-            break;
-        case evictNodeReqType:
-            HandleEvictNode(reqBuf, respBuf, respLen);
+        case getNodeReqType:
+            HandleGetNode(reqBuf, respBuf, respLen);
             break;
         case upsertNodeReqType:
             HandleUpsertNode(reqBuf, respBuf, respLen);
@@ -64,13 +57,15 @@ void StorageServer::ReceiveRequest(uint8_t reqType, char *reqBuf, char *respBuf)
         Warning("Failed to send reply message");
 }
 
-void StorageServer::HandleGetNodeId(char *reqBuf, char *respBuf, size_t &respLen) {
-    Debug("Received get node ID");
-    auto *req = reinterpret_cast<nodeid_request_t *>(reqBuf);
-    auto *resp = reinterpret_cast<nodeid_response_t *>(respBuf);
+void StorageServer::HandleGetNode(char *reqBuf, char *respBuf, size_t &respLen) {
+    Debug("Received get node");
+    auto *req = reinterpret_cast<getnode_request_t *>(reqBuf);
+    auto *resp = reinterpret_cast<getnode_response_t *>(respBuf);
     resp->req_nr = req->req_nr;
-    resp->id = storageApp->GetNodeId();
-    respLen = sizeof(nodeid_response_t);
+    std::string node = storageApp->GetNode(req->node_id);
+    resp->size = node.size();
+    memcpy(resp->buffer, node.c_str(), node.size());
+    respLen = sizeof(getnode_response_t) + node.size();
 }
 
 void StorageServer::HandleUpsertNode(char *reqBuf, char *respBuf, size_t &respLen) {
@@ -83,15 +78,4 @@ void StorageServer::HandleUpsertNode(char *reqBuf, char *respBuf, size_t &respLe
     resp->req_nr = req->req_nr;
     resp->success = true;
     respLen = sizeof(upsertnode_response_t);
-}
-
-void StorageServer::HandleEvictNode(char *reqBuf, char *respBuf, size_t &respLen) {
-    Debug("Received HandleEvictNode");
-    auto *req = reinterpret_cast<evictnode_request_t *>(reqBuf);
-    auto *resp = reinterpret_cast<evictnode_response_t *>(respBuf);
-    std::string buffer = string(req->buffer, 4096);
-    //std::cout << "Buffer for " << req->node_id << "is: " << buffer << "\n";
-    resp->req_nr = req->req_nr;
-    resp->success = true;
-    respLen = sizeof(evictnode_response_t);
 }
