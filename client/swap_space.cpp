@@ -149,3 +149,22 @@ void swap_space::evict_all(void)
     current_in_memory_objects--;
   }
 }
+
+// transactional interface implementation
+void swap_space::BeginTxn() {
+  txn_started = true;
+}
+
+bool swap_space::CommitTxn() {
+  if (!txn_started) return false;
+
+  // TODO: 1. lock write set
+  // TODO: 2. validate read set
+  // TODO: 3. distributed transaction 
+
+  return true;
+}
+
+void swap_space::AbortTxn() {
+  if (!txn_started) return;
+}

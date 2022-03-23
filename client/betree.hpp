@@ -663,6 +663,7 @@ public:
   // occurs.
   void upsert(int opcode, Key k, Value v)
   {
+    ss->BeginTxn();
     message_map tmp;
     tmp[MessageKey<Key>(k, next_timestamp++)] = Message<Value>(opcode, v);
     pivot_map new_nodes = root->flush(*this, tmp);
@@ -670,6 +671,7 @@ public:
       root = ss->allocate(new node);
       root->pivots = new_nodes;
     }
+    ss->CommitTxn(); // TODO: retry if txn aborted
   }
 
   void insert(Key k, Value v)
@@ -689,7 +691,9 @@ public:
   
   Value query(Key k)
   {
+    ss->BeginTxn();
     Value v = root->query(*this, k);
+    ss->CommitTxn(); // TODO: retry if txn aborted
     return v;
   }
 

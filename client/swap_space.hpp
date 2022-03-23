@@ -178,6 +178,11 @@ public:
   void evict_all();
   template<class Referent> class pointer;
 
+  // transactional interface
+  void BeginTxn();
+  bool CommitTxn();
+  void AbortTxn();
+
   template<class Referent>
   pointer<Referent> allocate(Referent * tgt) {
     return pointer<Referent>(this, tgt);
@@ -250,7 +255,6 @@ public:
     }
     
     void access(uint64_t tgt, bool dirty) const {
-      Debug("Accessing node, dirty = %d", dirty);
       assert(ss->objects.count(tgt) > 0);
       object *obj = ss->objects[tgt];
       ss->lru_pqueue.erase(obj);
@@ -258,7 +262,12 @@ public:
       ss->lru_pqueue.insert(obj);
       obj->target_is_dirty |= dirty;
       ss->load<Referent>(tgt);
-      ss->maybe_evict_something();
+      if (dirty)
+        ss->txn.addToWriteSet(obj->node_id, ""); // TODO: serialize now or wait?
+      else
+        ss->txn.addToReadSet(obj->node_id, obj->ts);
+
+      //ss->maybe_evict_something();
     }
   
     swap_space *ss;
@@ -424,15 +433,18 @@ private:
 
   uint64_t next_id = 1;
   uint64_t next_access_time = 0;
-  
+
+  Transaction txn;
+  bool txn_started;
+
   class object {
   public:
-    
     object(swap_space *sspace, serializable * tgt);
-    
+
     serializable * target;
     uint64_t id;
     NodeID node_id;
+    Timestamp ts;
     uint64_t bsid;
     bool is_leaf;
     uint64_t refcount;
