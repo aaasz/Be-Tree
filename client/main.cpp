@@ -287,15 +287,15 @@ void benchmark_test(betree<FKey, std::string> &b,
   Debug("*** Do update 0");
   b.update(std::to_string(0), std::to_string(0) + ":");
   Debug("*** Done update 0");
-  Debug("*** Do update 1");
-  b.update(std::to_string(1), std::to_string(1) + ":");
-  Debug("*** Done update 1");
-  Debug("*** Do update 2");
-  b.update(std::to_string(2), std::to_string(2) + ":");
-  Debug("*** Done update 2");
-  Debug("*** Do update 3");
-  b.update(std::to_string(3), std::to_string(3) + ":");
-  Debug("*** Done update 3");
+//  Debug("*** Do update 1");
+//  b.update(std::to_string(1), std::to_string(1) + ":");
+//  Debug("*** Done update 1");
+//  Debug("*** Do update 2");
+//  b.update(std::to_string(2), std::to_string(2) + ":");
+//  Debug("*** Done update 2");
+//  Debug("*** Do update 3");
+//  b.update(std::to_string(3), std::to_string(3) + ":");
+//  Debug("*** Done update 3");
   Debug("Do query 3");
   b.query(std::to_string(3));
   Debug("Query done 3");
@@ -332,7 +332,7 @@ void client_fiber_func(int fiber_id,
         benchmark_test(b, nops, number_of_distinct_keys, random_seed, fp);
 
     fclose(fp);
-    b.evict_all();
+    //b.evict_all();
 }
 
 void* client_thread_func(int thread_id, network::Configuration config) {

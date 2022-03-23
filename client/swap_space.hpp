@@ -81,6 +81,8 @@
 #include "storage_client.hpp"
 #include "debug/message.hpp"
 #include "common/node_id.hpp"
+#include "common/transaction.hpp"
+
 
 class swap_space;
 
@@ -248,6 +250,7 @@ public:
     }
     
     void access(uint64_t tgt, bool dirty) const {
+      Debug("Accessing node, dirty = %d", dirty);
       assert(ss->objects.count(tgt) > 0);
       object *obj = ss->objects[tgt];
       ss->lru_pqueue.erase(obj);
@@ -283,6 +286,7 @@ public:
     }
 
     ~pointer(void) {
+      Debug("Destruct object with seq nr %ld", target);
       depoint();
     }
 
@@ -397,14 +401,14 @@ public:
     pointer(swap_space *sspace, Referent *tgt)
     {
       ss = sspace;
-      target = sspace->next_id++;
       // TODO: pick server
       // TODO: get unique client id
-      node_id = NodeID(0, 0, target);
-      Debug("Creating node with node id: %ld", node_id.seq_nr);
       object *o = new object(sspace, tgt);
       assert(o != NULL);
       target = o->id;
+      node_id = NodeID(0, 0, target);
+      o->node_id = node_id;
+      Debug("Created object with seq nr: %ld", node_id.seq_nr);
       assert(ss->objects.count(target) == 0);
       ss->objects[target] = o;
       ss->lru_pqueue.insert(o);
@@ -450,7 +454,8 @@ private:
       std::iostream *in = backstore->get(obj->bsid);
       Referent *r = new Referent();
       serialization_context ctxt(*this);
-      deserialize(*in, ctxt, *r);
+      //deserialize(*in, ctxt, *r);
+      deserialize(ss, ctxt, *r);
       backstore->put(in);
       obj->target = r;
       current_in_memory_objects++;

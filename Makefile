@@ -145,16 +145,9 @@ endef
 
 include debug/Rules.mk
 include network/Rules.mk
+include common/Rules.mk
 include client/Rules.mk
 include server/Rules.mk
-#include replication/common/Rules.mk
-#include replication/meerkatir/Rules.mk
-#include replication/leadermeerkatir/Rules.mk
-#include store/common/Rules.mk
-#include store/meerkatstore/Rules.mk
-#include store/meerkatstore/meerkatir/Rules.mk
-#include store/meerkatstore/leadermeerkatir/Rules.mk
-#include store/benchmark/Rules.mk
 ##################################################################
 # General rules
 #
