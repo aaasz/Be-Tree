@@ -689,7 +689,7 @@ public:
     upsert(DELETE, k, default_value);
   }
   
-  Value query(Key k)
+  Value query(Key k) const
   {
     ss->BeginTxn();
     Value v = root->query(*this, k);

@@ -262,14 +262,20 @@ public:
       ss->lru_pqueue.insert(obj);
       obj->target_is_dirty |= dirty;
       ss->load<Referent>(tgt);
-      if (dirty)
-        ss->txn.addToWriteSet(obj->node_id, ""); // TODO: serialize now or wait?
-      else
-        ss->txn.addToReadSet(obj->node_id, obj->ts);
 
+      Debug("Adding access node");
+      // add the accessed node to the current transaction's read or write set
+      if (!ss->txn_started)
+        Warning("Transaction has not been started");
+      else {
+        if (dirty)
+          ss->txn.addToWriteSet(obj->node_id, ""); // TODO: serialize now or wait?
+        else
+          ss->txn.addToReadSet(obj->node_id, obj->ts);
+      }
       //ss->maybe_evict_something();
     }
-  
+
     swap_space *ss;
     uint64_t target;
   };

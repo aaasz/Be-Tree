@@ -34,6 +34,9 @@ StorageClient::StorageClient(const network::Configuration &config,
 
 StorageClient::~StorageClient() { }
 
+
+/*** RPC invocations ***/
+
 std::string StorageClient::GetNode(uint8_t coreIdx,
                        NodeID node_id) {
     uint64_t reqId = ++lastReqId;
@@ -81,6 +84,32 @@ bool StorageClient::UpsertNode(uint8_t coreIdx,
     return this->upsertNodeReply;
 }
 
+bool StorageClient::Lock(uint8_t coreIdx,
+                         const Transaction &txn) {
+
+    uint64_t reqId = ++lastReqId;
+    auto *reqBuf = reinterpret_cast<lock_request_t *>(
+      transport->GetRequestBuf(
+        sizeof(lock_request_t) + txn.serialized_size(),
+        sizeof(lock_response_t)
+      )
+    );
+    reqBuf->req_nr = reqId;
+    reqBuf->size = txn.serialized_size();
+    txn.serialize(reqBuf->buffer);
+    blocked = true;
+    transport->SendRequestToServer(this,
+                                   lockReqType,
+                                   0, coreIdx, // TODO: distributed transaction
+                                   sizeof(lock_request_t) + txn.serialized_size());
+    return this->lockReply;
+}
+
+
+
+
+/*** Handling RPC replies ***/
+
 void StorageClient::ReceiveResponse(uint8_t reqType, char *respBuf) {
     Debug("[%lu] received response", clientid);
     switch(reqType){
@@ -115,7 +144,7 @@ void StorageClient::HandleGetNodeReply(char *respBuf) {
 }
 
 void StorageClient::HandleUpsertNodeReply(char *respBuf) {
-    auto *resp = reinterpret_cast<evictnode_response_t *>(respBuf);
+    auto *resp = reinterpret_cast<upsertnode_response_t *>(respBuf);
 
     Debug(
         "Client received UpsertNodeReplyMessage for "
@@ -129,5 +158,23 @@ void StorageClient::HandleUpsertNodeReply(char *respBuf) {
         return;
     }
     this->upsertNodeReply = resp->success;
+    blocked = false;
+}
+
+void StorageClient::HandleLockReply(char *respBuf) {
+    auto *resp = reinterpret_cast<lock_response_t *>(respBuf);
+
+    Debug(
+        "Client received LockReplyMessage for "
+        "request %lu.", resp->req_nr);
+
+    if (resp->req_nr != lastReqId) {
+        Warning(
+            "Client was not expecting a LockReplyMessage for request %lu, "
+            "so it is ignoring the request.",
+            resp->req_nr);
+        return;
+    }
+    this->lockReply = resp->success;
     blocked = false;
 }

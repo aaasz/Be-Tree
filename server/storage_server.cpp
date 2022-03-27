@@ -16,11 +16,23 @@ StorageServerApp::StorageServerApp() : current_id(0) {
 }
 
 std::string StorageServerApp::GetNode(NodeID node_id) {
-    return objects[node_id];
+    return objects[node_id].serialized_node;
 }
 
 void StorageServerApp::UpsertNode(NodeID node_id, uint16_t size, char* buff) {
-    objects[node_id] = std::string(buff, size);
+    objects[node_id].serialized_node = std::string(buff, size);
+}
+
+bool StorageServerApp::Lock(Transaction &txn) {
+    for (auto w : txn.getWriteSet()) {
+        if (objects[w.first].locked) {
+            Debug("Node already locked <%d, %d, %ld>", w.first.server_id, w.first.client_id, w.first.seq_nr);
+            return false;
+        }
+        objects[w.first].locked = true;
+        Debug("Locked <%d, %d, %ld>", w.first.server_id, w.first.client_id, w.first.seq_nr);
+    }
+    return true;
 }
 
 StorageServer::StorageServer(network::Configuration config, int myIdx,
@@ -47,6 +59,9 @@ void StorageServer::ReceiveRequest(uint8_t reqType, char *reqBuf, char *respBuf)
             break;
         case upsertNodeReqType:
             HandleUpsertNode(reqBuf, respBuf, respLen);
+            break;
+        case lockReqType:
+            HandleLock(reqBuf, respBuf, respLen);
             break;
         default:
             Warning("Unrecognized rquest type: %d", reqType);
@@ -78,4 +93,17 @@ void StorageServer::HandleUpsertNode(char *reqBuf, char *respBuf, size_t &respLe
     resp->req_nr = req->req_nr;
     resp->success = true;
     respLen = sizeof(upsertnode_response_t);
+}
+
+// lock all nodes in the transaction's write set
+void StorageServer::HandleLock(char *reqBuf, char *respBuf, size_t &respLen) {
+    Debug("Received HandleLock");
+    auto *req = reinterpret_cast<lock_request_t *>(reqBuf);
+    auto *resp = reinterpret_cast<lock_response_t *>(respBuf);
+    Transaction t;
+    t.deserialize(req->buffer);
+    bool success = storageApp->Lock(t);
+    resp->req_nr = req->req_nr;
+    resp->success = success;
+    respLen = sizeof(lock_response_t);
 }

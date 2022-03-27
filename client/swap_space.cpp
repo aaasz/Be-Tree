@@ -152,13 +152,23 @@ void swap_space::evict_all(void)
 
 // transactional interface implementation
 void swap_space::BeginTxn() {
+  Debug("Begin TXN");
   txn_started = true;
 }
 
 bool swap_space::CommitTxn() {
   if (!txn_started) return false;
 
-  // TODO: 1. lock write set
+  Debug("Commit TXN; readSet count = %ld, writeSet count = %ld", txn.getReadSet().size(), txn.getWriteSet().size());
+
+  // 1. lock write set
+  if (sc->Lock(0, txn)) {
+    Debug("Locks acquired successfully");
+  }
+
+  txn.clear();
+  txn_started = false;
+
   // TODO: 2. validate read set
   // TODO: 3. distributed transaction 
 

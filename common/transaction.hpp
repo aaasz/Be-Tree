@@ -45,9 +45,9 @@ public:
 
     void addToReadSet(const NodeID &node_id, const Timestamp &readTime);
     void addToWriteSet(const NodeID &node_id, const std::string &serialized_node);
-    uint32_t serialized_size();
+    uint32_t serialized_size() const;
     void serialize(char *buffer) const;
-    void deserialize(uint16_t nr_reads, uint16_t nr_writes, char *buffer);
+    void deserialize(char *buffer);
     void clear();
 };
 

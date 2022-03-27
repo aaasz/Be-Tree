@@ -6,7 +6,7 @@
 // Request types
 const uint8_t getNodeReqType = 1;
 const uint8_t upsertNodeReqType = 2;
-const uint8_t evictNodeReqType = 3;
+const uint8_t lockReqType = 3;
 
 struct getnode_request_t {
     uint64_t req_nr;
@@ -31,16 +31,15 @@ struct upsertnode_response_t {
     bool success;
 };
 
-struct evictnode_request_t {
+struct lock_request_t {
     uint64_t req_nr;
-    uint64_t node_id;
-    char buffer[4096];
+    uint16_t size;
+    char buffer[];
 };
 
-struct evictnode_response_t {
+struct lock_response_t {
     uint64_t req_nr;
     bool success;
 };
-
 
 #endif  /* _NETWORK_MESSAGES_H_ */

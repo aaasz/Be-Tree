@@ -11,6 +11,7 @@
 #include "network/configuration.hpp"
 #include "network/transport.hpp"
 #include "common/node_id.hpp"
+#include "common/transaction.hpp"
 
 #include <unordered_map>
 
@@ -22,10 +23,18 @@ class StorageServerApp
 
     std::string GetNode(NodeID id);
     void UpsertNode(NodeID id, uint16_t size, char* buff);
+    bool Lock(Transaction &txn);
 
   private:
     uint32_t current_id;
-    std::unordered_map<NodeID, std::string, node_id_hash_fn> objects;
+
+    struct object {
+        bool locked;
+        Timestamp ts;
+        std::string serialized_node;
+    };
+
+    std::unordered_map<NodeID, object, node_id_hash_fn> objects;
 };
 
 class StorageServer : network::TransportReceiver
@@ -45,6 +54,7 @@ class StorageServer : network::TransportReceiver
     // new handlers
     void HandleGetNode(char *reqBuf, char *respBuf, size_t &respLen);
     void HandleUpsertNode(char *reqBuf, char *respBuf, size_t &respLen);
+    void HandleLock(char *reqBuf, char *respBuf, size_t &respLen);
 
   private:
     network::Configuration config;
