@@ -161,6 +161,10 @@ bool swap_space::CommitTxn() {
 
   Debug("Commit TXN; readSet count = %ld, writeSet count = %ld", txn.getReadSet().size(), txn.getWriteSet().size());
 
+  //if (txn.getWriteSet().size() == 1) {
+  //  Debug("Commit TXN, write node_id = <%d, %d, %ld>", txn.getWriteSet().begin()->first.server_id, txn.getWriteSet().begin()->first.client_id, txn.getWriteSet().begin()->first.seq_nr);
+  //}
+
   // 1. lock write set
   if (sc->Lock(0, txn)) {
     Debug("Locks acquired successfully");

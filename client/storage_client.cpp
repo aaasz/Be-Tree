@@ -119,6 +119,9 @@ void StorageClient::ReceiveResponse(uint8_t reqType, char *respBuf) {
         case upsertNodeReqType:
             HandleUpsertNodeReply(respBuf);
             break;
+        case lockReqType:
+            HandleLockReply(respBuf);
+            break;
         default:
             Warning("Unrecognized request type: %d\n", reqType);
     }

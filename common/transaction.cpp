@@ -28,7 +28,7 @@ void Transaction::addToWriteSet(const NodeID &node_id,
 }
 
 uint32_t Transaction::serialized_size() const {
-    return readSet.size()*sizeof(read_t) + writeSet.size()*sizeof(write_t) + write_values_size;
+    return 2*sizeof(uint16_t) + readSet.size()*sizeof(read_t) + writeSet.size()*sizeof(write_t) + write_values_size;
 }
 
 void Transaction::serialize(char *reqBuf) const {
@@ -63,7 +63,7 @@ void Transaction::deserialize(char* buf) {
     uint16_t nr_writes = *ct;
     ct++;
 
-    auto *read_ptr = reinterpret_cast<read_t *> (buf);
+    auto *read_ptr = reinterpret_cast<read_t *> (ct);
     for (int i = 0; i < nr_reads; i++) {
         readSet[read_ptr->node_id] = read_ptr->timestamp;
         read_ptr++;
