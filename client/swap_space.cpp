@@ -157,26 +157,40 @@ void swap_space::BeginTxn() {
 }
 
 bool swap_space::CommitTxn() {
+  bool success = true;
+  uint8_t core_idx = 0;
+
   if (!txn_started) return false;
 
   Debug("Commit TXN; readSet count = %ld, writeSet count = %ld", txn.getReadSet().size(), txn.getWriteSet().size());
 
-  //if (txn.getWriteSet().size() == 1) {
-  //  Debug("Commit TXN, write node_id = <%d, %d, %ld>", txn.getWriteSet().begin()->first.server_id, txn.getWriteSet().begin()->first.client_id, txn.getWriteSet().begin()->first.seq_nr);
-  //}
-
   // 1. lock write set
-  if (sc->Lock(0, txn)) {
+  if (sc->Lock(core_idx, txn)) {
     Debug("Locks acquired successfully");
+  } else {
+    success = false;
   }
+
+  // 2. validate read set
+  if (success && sc->Validate(core_idx, txn)) {
+    Debug("Reads validated successfully");
+  } else {
+    success = false;
+  }
+
+  // 3. commit or abort
+  //if (success) {
+  //  sc->Commit(core_idx, txn);
+  //} else {
+  //  sc->Abort(core_idx, txn);
+  //}
 
   txn.clear();
   txn_started = false;
 
-  // TODO: 2. validate read set
-  // TODO: 3. distributed transaction 
+  // TODO: support for distributed transactions
 
-  return true;
+  return success;
 }
 
 void swap_space::AbortTxn() {

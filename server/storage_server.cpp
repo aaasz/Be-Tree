@@ -35,6 +35,20 @@ bool StorageServerApp::Lock(Transaction &txn) {
     return true;
 }
 
+bool StorageServerApp::Validate(Transaction &txn) {
+    for (auto r : txn.getReadSet()) {
+        if (objects[r.first].locked) {
+            Debug("Node locked <%d, %d, %ld>", r.first.server_id, r.first.client_id, r.first.seq_nr);
+            return false;
+        }
+        if (objects[r.first].ts.version != r.second.version) {
+            Debug("Versions do not match %ld, %ld", objects[r.first].ts.version, r.second.version);
+            return false;
+        }
+    }
+    return true;
+}
+
 StorageServer::StorageServer(network::Configuration config, int myIdx,
                      network::Transport *transport,
                      StorageServerApp *storageApp)
@@ -62,6 +76,9 @@ void StorageServer::ReceiveRequest(uint8_t reqType, char *reqBuf, char *respBuf)
             break;
         case lockReqType:
             HandleLock(reqBuf, respBuf, respLen);
+            break;
+        case validateReqType:
+            HandleValidate(reqBuf, respBuf, respLen);
             break;
         default:
             Warning("Unrecognized rquest type: %d", reqType);
@@ -106,4 +123,17 @@ void StorageServer::HandleLock(char *reqBuf, char *respBuf, size_t &respLen) {
     resp->req_nr = req->req_nr;
     resp->success = success;
     respLen = sizeof(lock_response_t);
+}
+
+// validate reads in the transaction's read set
+void StorageServer::HandleValidate(char *reqBuf, char *respBuf, size_t &respLen) {
+    Debug("Received HandleValidate");
+    auto *req = reinterpret_cast<validate_request_t *>(reqBuf);
+    auto *resp = reinterpret_cast<validate_response_t *>(respBuf);
+    Transaction t;
+    t.deserialize(req->buffer);
+    bool success = storageApp->Validate(t);
+    resp->req_nr = req->req_nr;
+    resp->success = success;
+    respLen = sizeof(validate_response_t);
 }

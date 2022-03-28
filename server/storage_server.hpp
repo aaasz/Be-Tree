@@ -24,6 +24,7 @@ class StorageServerApp
     std::string GetNode(NodeID id);
     void UpsertNode(NodeID id, uint16_t size, char* buff);
     bool Lock(Transaction &txn);
+    bool Validate(Transaction &txn);
 
   private:
     uint32_t current_id;
@@ -55,6 +56,7 @@ class StorageServer : network::TransportReceiver
     void HandleGetNode(char *reqBuf, char *respBuf, size_t &respLen);
     void HandleUpsertNode(char *reqBuf, char *respBuf, size_t &respLen);
     void HandleLock(char *reqBuf, char *respBuf, size_t &respLen);
+    void HandleValidate(char *reqBuf, char *respBuf, size_t &respLen);
 
   private:
     network::Configuration config;

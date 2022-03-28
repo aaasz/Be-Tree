@@ -105,6 +105,26 @@ bool StorageClient::Lock(uint8_t coreIdx,
     return this->lockReply;
 }
 
+bool StorageClient::Validate(uint8_t coreIdx,
+                             const Transaction &txn) {
+
+    uint64_t reqId = ++lastReqId;
+    auto *reqBuf = reinterpret_cast<validate_request_t *>(
+      transport->GetRequestBuf(
+        sizeof(validate_request_t) + txn.serialized_size(),
+        sizeof(validate_response_t)
+      )
+    );
+    reqBuf->req_nr = reqId;
+    reqBuf->size = txn.serialized_size();
+    txn.serialize(reqBuf->buffer);
+    blocked = true;
+    transport->SendRequestToServer(this,
+                                   validateReqType,
+                                   0, coreIdx, // TODO: distributed transaction
+                                   sizeof(validate_request_t) + txn.serialized_size());
+    return this->validateReply;
+}
 
 
 
@@ -121,6 +141,9 @@ void StorageClient::ReceiveResponse(uint8_t reqType, char *respBuf) {
             break;
         case lockReqType:
             HandleLockReply(respBuf);
+            break;
+        case validateReqType:
+            HandleValidateReply(respBuf);
             break;
         default:
             Warning("Unrecognized request type: %d\n", reqType);
@@ -179,5 +202,23 @@ void StorageClient::HandleLockReply(char *respBuf) {
         return;
     }
     this->lockReply = resp->success;
+    blocked = false;
+}
+
+void StorageClient::HandleValidateReply(char *respBuf) {
+    auto *resp = reinterpret_cast<validate_response_t *>(respBuf);
+
+    Debug(
+        "Client received ValidateReplyMessage for "
+        "request %lu.", resp->req_nr);
+
+    if (resp->req_nr != lastReqId) {
+        Warning(
+            "Client was not expecting a ValidateReplyMessage for request %lu, "
+            "so it is ignoring the request.",
+            resp->req_nr);
+        return;
+    }
+    this->validateReply = resp->success;
     blocked = false;
 }
