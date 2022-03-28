@@ -49,6 +49,23 @@ bool StorageServerApp::Validate(Transaction &txn) {
     return true;
 }
 
+void StorageServerApp::Commit(Transaction &txn) {
+    for (auto w : txn.getWriteSet()) {
+        if (!objects[w.first].locked) {
+            Warning("Object that I try to modify has not been locked");
+        }
+        objects[w.first].ts.version++;
+        objects[w.first].serialized_node = w.second;
+        objects[w.first].locked = false;
+    }
+}
+
+void StorageServerApp::Abort(Transaction &txn) {
+    for (auto w : txn.getWriteSet()) {
+        objects[w.first].locked = false;
+    }
+}
+
 StorageServer::StorageServer(network::Configuration config, int myIdx,
                      network::Transport *transport,
                      StorageServerApp *storageApp)
@@ -79,6 +96,12 @@ void StorageServer::ReceiveRequest(uint8_t reqType, char *reqBuf, char *respBuf)
             break;
         case validateReqType:
             HandleValidate(reqBuf, respBuf, respLen);
+            break;
+        case commitReqType:
+            HandleCommit(reqBuf, respBuf, respLen);
+            break;
+        case abortReqType:
+            HandleAbort(reqBuf, respBuf, respLen);
             break;
         default:
             Warning("Unrecognized rquest type: %d", reqType);
@@ -136,4 +159,28 @@ void StorageServer::HandleValidate(char *reqBuf, char *respBuf, size_t &respLen)
     resp->req_nr = req->req_nr;
     resp->success = success;
     respLen = sizeof(validate_response_t);
+}
+
+void StorageServer::HandleCommit(char *reqBuf, char *respBuf, size_t &respLen) {
+    Debug("Received HandleCommit");
+    auto *req = reinterpret_cast<commit_request_t *>(reqBuf);
+    auto *resp = reinterpret_cast<commit_response_t *>(respBuf);
+    Transaction t;
+    t.deserialize(req->buffer);
+    storageApp->Commit(t);
+    resp->req_nr = req->req_nr;
+    resp->success = true;
+    respLen = sizeof(commit_response_t);
+}
+
+void StorageServer::HandleAbort(char *reqBuf, char *respBuf, size_t &respLen) {
+    Debug("Received HandleAbortt");
+    auto *req = reinterpret_cast<abort_request_t *>(reqBuf);
+    auto *resp = reinterpret_cast<abort_response_t *>(respBuf);
+    Transaction t;
+    t.deserialize(req->buffer);
+    storageApp->Abort(t);
+    resp->req_nr = req->req_nr;
+    resp->success = true;
+    respLen = sizeof(abort_response_t);
 }

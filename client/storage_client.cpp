@@ -126,6 +126,48 @@ bool StorageClient::Validate(uint8_t coreIdx,
     return this->validateReply;
 }
 
+void StorageClient::Commit(uint8_t coreIdx,
+                           const Transaction &txn) {
+
+    uint64_t reqId = ++lastReqId;
+    auto *reqBuf = reinterpret_cast<commit_request_t *>(
+      transport->GetRequestBuf(
+        sizeof(commit_request_t) + txn.serialized_size(),
+        sizeof(commit_response_t)
+      )
+    );
+    reqBuf->req_nr = reqId;
+    reqBuf->size = txn.serialized_size();
+    txn.serialize(reqBuf->buffer);
+    // TODO: do we need this?
+    blocked = true;
+    transport->SendRequestToServer(this,
+                                   commitReqType,
+                                   0, coreIdx, // TODO: distributed transaction
+                                   sizeof(commit_request_t) + txn.serialized_size());
+}
+
+void StorageClient::Abort(uint8_t coreIdx,
+                          const Transaction &txn) {
+
+    uint64_t reqId = ++lastReqId;
+    auto *reqBuf = reinterpret_cast<abort_request_t *>(
+      transport->GetRequestBuf(
+        sizeof(abort_request_t) + txn.serialized_size(),
+        sizeof(abort_response_t)
+      )
+    );
+    reqBuf->req_nr = reqId;
+    reqBuf->size = txn.serialized_size();
+    txn.serialize(reqBuf->buffer);
+    // TODO: do we need this?
+    blocked = true;
+    transport->SendRequestToServer(this,
+                                   abortReqType,
+                                   0, coreIdx, // TODO: distributed transaction
+                                   sizeof(abort_request_t) + txn.serialized_size());
+}
+
 
 
 /*** Handling RPC replies ***/
@@ -144,6 +186,12 @@ void StorageClient::ReceiveResponse(uint8_t reqType, char *respBuf) {
             break;
         case validateReqType:
             HandleValidateReply(respBuf);
+            break;
+        case commitReqType:
+            HandleCommitReply(respBuf);
+            break;
+        case abortReqType:
+            HandleAbortReply(respBuf);
             break;
         default:
             Warning("Unrecognized request type: %d\n", reqType);
@@ -220,5 +268,25 @@ void StorageClient::HandleValidateReply(char *respBuf) {
         return;
     }
     this->validateReply = resp->success;
+    blocked = false;
+}
+
+void StorageClient::HandleCommitReply(char *respBuf) {
+    auto *resp = reinterpret_cast<commit_response_t *>(respBuf);
+
+    Debug(
+        "Client received CommitReplyMessage for "
+        "request %lu.", resp->req_nr);
+
+    blocked = false;
+}
+
+void StorageClient::HandleAbortReply(char *respBuf) {
+    auto *resp = reinterpret_cast<abort_response_t *>(respBuf);
+
+    Debug(
+        "Client received AbortReplyMessage for "
+        "request %lu.", resp->req_nr);
+
     blocked = false;
 }

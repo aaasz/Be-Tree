@@ -20,8 +20,8 @@ class StorageClient : public network::TransportReceiver
     virtual std::string GetNode(uint8_t coreIdx, NodeID node_id);
     virtual bool Lock(uint8_t coreIdx, const Transaction &txn);
     virtual bool Validate(uint8_t coreIdx, const Transaction &txn);
-    //virtual void Commit(uint8_t coreIdx, const Transaction &txn);
-    //virtual void Abort(uint8_t coreIdx, const Transaction &txn);
+    virtual void Commit(uint8_t coreIdx, const Transaction &txn);
+    virtual void Abort(uint8_t coreIdx, const Transaction &txn);
 
     // Inherited from TransportReceiver
     void ReceiveRequest(uint8_t reqType, char *reqBuf, char *respBuf) override { PPanic("Not implemented."); };
@@ -44,8 +44,8 @@ protected:
     void HandleUpsertNodeReply(char *respBuf);
     void HandleLockReply(char *respBuf);
     void HandleValidateReply(char *respBuf);
-    //void HandleCommitReply(char *respBuf);
-    //void HandleAbortReply(char *respBuf);
+    void HandleCommitReply(char *respBuf);
+    void HandleAbortReply(char *respBuf);
     bool upsertNodeReply;
     bool lockReply;
     bool validateReply;

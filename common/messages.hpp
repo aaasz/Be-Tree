@@ -8,6 +8,8 @@ const uint8_t getNodeReqType = 1;
 const uint8_t upsertNodeReqType = 2;
 const uint8_t lockReqType = 3;
 const uint8_t validateReqType = 4;
+const uint8_t commitReqType = 5;
+const uint8_t abortReqType = 6;
 
 struct getnode_request_t {
     uint64_t req_nr;
@@ -50,6 +52,28 @@ struct validate_request_t {
 };
 
 struct validate_response_t {
+    uint64_t req_nr;
+    bool success;
+};
+
+struct commit_request_t {
+    uint64_t req_nr;
+    uint16_t size;
+    char buffer[];
+};
+
+struct commit_response_t {
+    uint64_t req_nr;
+    bool success;
+};
+
+struct abort_request_t {
+    uint64_t req_nr;
+    uint16_t size;
+    char buffer[];
+};
+
+struct abort_response_t {
     uint64_t req_nr;
     bool success;
 };

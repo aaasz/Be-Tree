@@ -81,6 +81,11 @@ GENERATE_FUNCTION(2)
 GENERATE_FUNCTION(3)
 GENERATE_FUNCTION(4)
 GENERATE_FUNCTION(5)
+GENERATE_FUNCTION(6)
+GENERATE_FUNCTION(7)
+GENERATE_FUNCTION(8)
+GENERATE_FUNCTION(9)
+GENERATE_FUNCTION(10)
 
 FastTransport::FastTransport(const network::Configuration &config,
                              std::string &ip,
@@ -147,6 +152,11 @@ FastTransport::FastTransport(const network::Configuration &config,
     nexus->register_req_func(3, fasttransport_request_(3), erpc::ReqFuncType::kForeground);
     nexus->register_req_func(4, fasttransport_request_(4), erpc::ReqFuncType::kForeground);
     nexus->register_req_func(5, fasttransport_request_(5), erpc::ReqFuncType::kForeground);
+    nexus->register_req_func(6, fasttransport_request_(6), erpc::ReqFuncType::kForeground);
+    nexus->register_req_func(7, fasttransport_request_(7), erpc::ReqFuncType::kForeground);
+    nexus->register_req_func(8, fasttransport_request_(8), erpc::ReqFuncType::kForeground);
+    nexus->register_req_func(9, fasttransport_request_(9), erpc::ReqFuncType::kForeground);
+    nexus->register_req_func(10, fasttransport_request_(10), erpc::ReqFuncType::kForeground);
     //}
 
     // Create the RPC object

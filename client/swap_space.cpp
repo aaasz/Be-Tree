@@ -162,28 +162,36 @@ bool swap_space::CommitTxn() {
 
   if (!txn_started) return false;
 
-  Debug("Commit TXN; readSet count = %ld, writeSet count = %ld", txn.getReadSet().size(), txn.getWriteSet().size());
+  Debug("Commit TXN;"
+        "readSet count = %ld,"
+        "writeSet count = %ld",
+        txn.getReadSet().size(),
+        txn.getWriteSet().size());
 
   // 1. lock write set
-  if (sc->Lock(core_idx, txn)) {
-    Debug("Locks acquired successfully");
-  } else {
-    success = false;
+  if (txn.getWriteSet().size() > 0) {
+    if (sc->Lock(core_idx, txn)) {
+      Debug("Locks acquired successfully");
+    } else {
+      success = false;
+    }
   }
 
   // 2. validate read set
-  if (success && sc->Validate(core_idx, txn)) {
-    Debug("Reads validated successfully");
-  } else {
-    success = false;
+  if (txn.getReadSet().size() > 0) {
+    if (success && sc->Validate(core_idx, txn)) {
+      Debug("Reads validated successfully");
+    } else {
+      success = false;
+    }
   }
 
   // 3. commit or abort
-  //if (success) {
-  //  sc->Commit(core_idx, txn);
-  //} else {
-  //  sc->Abort(core_idx, txn);
-  //}
+  if (success) {
+    sc->Commit(core_idx, txn);
+  } else {
+    sc->Abort(core_idx, txn);
+  }
 
   txn.clear();
   txn_started = false;
