@@ -49,6 +49,7 @@ public:
     void serialize(char *buffer) const;
     void deserialize(char *buffer);
     void clear();
+    void print() const;
 };
 
 // transations are serialized to a buffer containing arrays

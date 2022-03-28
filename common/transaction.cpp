@@ -1,6 +1,7 @@
 #include <cstring>
 #include "common/transaction.hpp"
-
+#include <sstream>
+#include "debug/message.hpp"
 
 Transaction::Transaction() :
     readSet(), writeSet(), write_values_size(0) { }
@@ -51,7 +52,7 @@ void Transaction::serialize(char *reqBuf) const {
         write_ptr->node_id = write.first;
         write_ptr->size = write.second.size(); 
         std::memcpy(write_ptr->buffer, write.second.c_str(), write.second.size());
-        write_ptr = (write_t*) ((char*) write_ptr + sizeof(write_ptr) + write_ptr->size);
+        write_ptr = (write_t*) ((char*) write_ptr + sizeof(write_t) + write_ptr->size);
     }
 }
 
@@ -73,11 +74,33 @@ void Transaction::deserialize(char* buf) {
     for (int i = 0; i < nr_writes; i++) {
         writeSet[write_ptr->node_id] = std::string(write_ptr->buffer, write_ptr->size);
         write_values_size += write_ptr->size;
-        write_ptr = (write_t*)((char*) write_ptr + sizeof(write_ptr) + write_ptr->size);
+        write_ptr = (write_t*)((char*) write_ptr + sizeof(write_t) + write_ptr->size);
     }
 }
 
 void Transaction::clear() {
     readSet.clear();
     writeSet.clear();
+}
+
+void Transaction::print() const {
+    std::stringstream ss;
+    ss << "\nNr reads: " << readSet.size() << "\n";
+    for (auto r : readSet) {
+	ss << "<" << std::to_string(r.first.server_id)
+           << "," << std::to_string(r.first.client_id)
+           << "," << std::to_string(r.first.seq_nr)
+           << "> : " << std::to_string(r.second.version) <<"\n";
+    }
+
+    ss << "Nr writes: " << writeSet.size() << "\n";
+
+    for (auto r : writeSet) {
+	ss << "<" << std::to_string(r.first.server_id)
+           << "," << std::to_string(r.first.client_id)
+           << "," << std::to_string(r.first.seq_nr)
+           << "> \n";
+    }
+
+    Debug("Txn: %s", ss.str().c_str());
 }
